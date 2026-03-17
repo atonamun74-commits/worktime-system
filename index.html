@@ -10,9 +10,11 @@
 <style>
 
 body{
-font-family:-apple-system,BlinkMacSystemFont;
+font-family:-apple-system;
 background:#f4f6fb;
 margin:20px;
+max-width:500px;
+margin:auto;
 }
 
 .card{
@@ -34,7 +36,7 @@ margin-top:10px;
 
 .in{background:#34c759;color:white;}
 .out{background:#ff3b30;color:white;}
-.query{background:#007aff;color:white;}
+.menu{background:#007aff;color:white;}
 
 </style>
 
@@ -42,12 +44,11 @@ margin-top:10px;
 
 <body>
 
-<h2>工時打卡系統</h2>
+<h2>工時打卡</h2>
 
 <div class="card">
 
-<label>姓名</label>
-<input id="name">
+<p>員工：<span id="user"></span></p>
 
 <label>時薪</label>
 <input id="rate" value="190">
@@ -70,13 +71,23 @@ margin-top:10px;
 
 <div class="card">
 
-<button class="query" onclick="goRecord()">查詢每月紀錄</button>
+<button class="menu" onclick="calendar()">月曆</button>
+<button class="menu" onclick="record()">紀錄查詢</button>
 
 </div>
 
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbwYJm-12JYPIu7MSvxvT4jIW34Revsa2g9FqJwnMlXd9e2fz5JrRdXnJ9vLTGOHB0TZ/exec";
+
+let name=localStorage.getItem("name");
+let password=localStorage.getItem("password");
+
+if(!name){
+location.href="login.html";
+}
+
+document.getElementById("user").innerText=name;
 
 function now(){
 
@@ -106,11 +117,8 @@ return (em-sm)/60;
 
 function clockIn(){
 
-let t=now();
-
-localStorage.setItem("start",t);
-
-alert("上班："+t);
+localStorage.setItem("start",now());
+alert("上班打卡成功");
 
 }
 
@@ -136,8 +144,9 @@ document.getElementById("todayPay").innerText=pay.toFixed(0);
 
 let data={
 
+password:password,
 date:today(),
-name:document.getElementById("name").value,
+name:name,
 start:start,
 end:end,
 hours:hours,
@@ -154,10 +163,12 @@ localStorage.removeItem("start");
 
 }
 
-function goRecord(){
+function calendar(){
+location.href="calendar.html";
+}
 
-window.location="record.html";
-
+function record(){
+location.href="record.html";
 }
 
 </script>
