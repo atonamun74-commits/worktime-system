@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>工時紀錄</title>
+
+<style>
+
+body{
+font-family:-apple-system;
+background:#f4f6fb;
+margin:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+box-shadow:0 3px 8px rgba(0,0,0,0.08);
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+td,th{
+border-bottom:1px solid #ddd;
+padding:10px;
+text-align:center;
+}
+
+button{
+margin-top:20px;
+padding:12px;
+border:none;
+border-radius:8px;
+background:#007aff;
+color:white;
+width:100%;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>每月上班紀錄</h2>
+
+<div class="card">
+
+<label>月份</label>
+
+<input type="month" id="month">
+
+<button onclick="load()">查詢</button>
+
+<table id="table">
+
+<tr>
+
+<th>日期</th>
+<th>上班</th>
+<th>下班</th>
+<th>工時</th>
+
+</tr>
+
+</table>
+
+</div>
+
+<button onclick="back()">返回打卡</button>
+
+<script>
+
+function load(){
+
+// 這裡之後可改成從API讀取
+
+alert("可連接Sheet API取得資料");
+
+}
+
+function back(){
+
+window.location="index.html";
+
+}
+
+</script>
+
+</body>
+</html>

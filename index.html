@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>工時打卡</title>
+
+<style>
+
+body{
+font-family:-apple-system,BlinkMacSystemFont;
+background:#f4f6fb;
+margin:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+margin-bottom:15px;
+box-shadow:0 3px 8px rgba(0,0,0,0.08);
+}
+
+button{
+padding:14px;
+border:none;
+border-radius:8px;
+font-size:16px;
+width:100%;
+margin-top:10px;
+}
+
+.in{background:#34c759;color:white;}
+.out{background:#ff3b30;color:white;}
+.query{background:#007aff;color:white;}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>工時打卡系統</h2>
+
+<div class="card">
+
+<label>姓名</label>
+<input id="name">
+
+<label>時薪</label>
+<input id="rate" value="190">
+
+</div>
+
+<div class="card">
+
+<button class="in" onclick="clockIn()">上班打卡</button>
+<button class="out" onclick="clockOut()">下班打卡</button>
+
+</div>
+
+<div class="card">
+
+<p>今日工時：<span id="todayH">0</span></p>
+<p>今日薪資：<span id="todayPay">0</span></p>
+
+</div>
+
+<div class="card">
+
+<button class="query" onclick="goRecord()">查詢每月紀錄</button>
+
+</div>
+
+<script>
+
+const API="https://script.google.com/macros/s/AKfycbwYJm-12JYPIu7MSvxvT4jIW34Revsa2g9FqJwnMlXd9e2fz5JrRdXnJ9vLTGOHB0TZ/exec";
+
+function now(){
+
+let d=new Date();
+
+return String(d.getHours()).padStart(2,'0')+":"+String(d.getMinutes()).padStart(2,'0');
+
+}
+
+function today(){
+
+return new Date().toISOString().split("T")[0];
+
+}
+
+function calc(s,e){
+
+let a=s.split(":");
+let b=e.split(":");
+
+let sm=a[0]*60+parseInt(a[1]);
+let em=b[0]*60+parseInt(b[1]);
+
+return (em-sm)/60;
+
+}
+
+function clockIn(){
+
+let t=now();
+
+localStorage.setItem("start",t);
+
+alert("上班："+t);
+
+}
+
+async function clockOut(){
+
+let start=localStorage.getItem("start");
+
+if(!start){
+alert("尚未上班打卡");
+return;
+}
+
+let end=now();
+
+let hours=calc(start,end);
+
+let rate=parseFloat(document.getElementById("rate").value);
+
+let pay=hours*rate;
+
+document.getElementById("todayH").innerText=hours.toFixed(2);
+document.getElementById("todayPay").innerText=pay.toFixed(0);
+
+let data={
+
+date:today(),
+name:document.getElementById("name").value,
+start:start,
+end:end,
+hours:hours,
+rate:rate
+
+};
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify(data)
+});
+
+localStorage.removeItem("start");
+
+}
+
+function goRecord(){
+
+window.location="record.html";
+
+}
+
+</script>
+
+</body>
+</html>
