@@ -7,12 +7,16 @@
 
 <title>工時紀錄</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 
 body{
 font-family:-apple-system;
 background:#f4f6fb;
 margin:20px;
+max-width:500px;
+margin:auto;
 }
 
 .card{
@@ -20,6 +24,7 @@ background:white;
 padding:20px;
 border-radius:12px;
 box-shadow:0 3px 8px rgba(0,0,0,0.08);
+margin-bottom:15px;
 }
 
 table{
@@ -43,53 +48,162 @@ color:white;
 width:100%;
 }
 
+.summary{
+font-size:18px;
+text-align:center;
+}
+
 </style>
 
 </head>
 
 <body>
 
-<h2>每月上班紀錄</h2>
+<h2>每月紀錄</h2>
 
 <div class="card">
 
 <label>月份</label>
-
 <input type="month" id="month">
 
 <button onclick="load()">查詢</button>
 
+</div>
+
+<div class="card summary">
+
+<p>本月工時：<span id="totalH">0</span> hr</p>
+<p>本月薪資：<span id="totalPay">0</span> 元</p>
+
+</div>
+
+<div class="card">
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<div class="card">
+
 <table id="table">
 
 <tr>
-
 <th>日期</th>
 <th>上班</th>
 <th>下班</th>
 <th>工時</th>
-
+<th>薪資</th>
 </tr>
 
 </table>
 
 </div>
 
-<button onclick="back()">返回打卡</button>
+<button onclick="back()">返回</button>
 
 <script>
 
-function load(){
+const API="https://script.google.com/macros/s/AKfycbwYJm-12JYPIu7MSvxvT4jIW34Revsa2g9FqJwnMlXd9e2fz5JrRdXnJ9vLTGOHB0TZ/exec";
 
-// 這裡之後可改成從API讀取
+let chart;
 
-alert("可連接Sheet API取得資料");
+async function load(){
+
+let month=document.getElementById("month").value;
+
+if(!month){
+alert("請選擇月份");
+return;
+}
+
+// 轉換成 2026年03月 格式
+let parts=month.split("-");
+let sheetName=parts[0]+"年"+parts[1]+"月";
+
+let password=localStorage.getItem("password");
+
+let url=API+"?action=getMonth&month="+sheetName+"&password="+password;
+
+let res=await fetch(url);
+
+let data=await res.json();
+
+render(data);
+
+}
+
+function render(data){
+
+let table=document.getElementById("table");
+
+table.innerHTML=`
+<tr>
+<th>日期</th>
+<th>上班</th>
+<th>下班</th>
+<th>工時</th>
+<th>薪資</th>
+</tr>
+`;
+
+let labels=[];
+let salary=[];
+
+let totalH=0;
+let totalPay=0;
+
+// 跳過標題列
+for(let i=1;i<data.length;i++){
+
+let r=data[i];
+
+let row=table.insertRow();
+
+row.insertCell(0).innerText=r[0];
+row.insertCell(1).innerText=r[2];
+row.insertCell(2).innerText=r[3];
+row.insertCell(3).innerText=r[4];
+row.insertCell(4).innerText=r[6];
+
+labels.push(r[0]);
+salary.push(r[6]);
+
+totalH+=Number(r[4]);
+totalPay+=Number(r[6]);
+
+}
+
+document.getElementById("totalH").innerText=totalH.toFixed(2);
+document.getElementById("totalPay").innerText=totalPay.toFixed(0);
+
+drawChart(labels,salary);
+
+}
+
+function drawChart(labels,data){
+
+let ctx=document.getElementById("chart");
+
+if(chart) chart.destroy();
+
+chart=new Chart(ctx,{
+
+type:"bar",
+
+data:{
+labels:labels,
+datasets:[{
+label:"每日薪資",
+data:data
+}]
+}
+
+});
 
 }
 
 function back(){
-
-window.location="index.html";
-
+location.href="index.html";
 }
 
 </script>
