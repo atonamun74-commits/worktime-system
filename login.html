@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工時系統登入</title>
+
+<style>
+
+body{
+font-family:-apple-system;
+background:#f4f6fb;
+margin:20px;
+max-width:500px;
+margin:auto;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+box-shadow:0 3px 8px rgba(0,0,0,0.08);
+}
+
+input{
+width:100%;
+padding:10px;
+margin-top:10px;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:15px;
+background:#007aff;
+color:white;
+border:none;
+border-radius:8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>工時系統登入</h2>
+
+<div class="card">
+
+<label>姓名</label>
+<input id="name">
+
+<label>系統密碼</label>
+<input id="password" type="password">
+
+<button onclick="login()">登入</button>
+
+</div>
+
+<script>
+
+function login(){
+
+let name=document.getElementById("name").value;
+let pass=document.getElementById("password").value;
+
+if(pass!=="isvara"){
+alert("密碼錯誤");
+return;
+}
+
+localStorage.setItem("name",name);
+localStorage.setItem("password",pass);
+
+location.href="index.html";
+
+}
+
+</script>
+
+</body>
+</html>

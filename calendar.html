@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>月曆</title>
+
+<style>
+
+body{
+font-family:-apple-system;
+background:#f4f6fb;
+margin:20px;
+max-width:500px;
+margin:auto;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+td{
+border:1px solid #ddd;
+height:50px;
+text-align:center;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>上班月曆</h2>
+
+<div id="calendar"></div>
+
+<button onclick="back()">返回</button>
+
+<script>
+
+function generate(){
+
+let d=new Date();
+
+let year=d.getFullYear();
+let month=d.getMonth();
+
+let first=new Date(year,month,1).getDay();
+let days=new Date(year,month+1,0).getDate();
+
+let html="<table>";
+
+let day=1;
+
+for(let r=0;r<6;r++){
+
+html+="<tr>";
+
+for(let c=0;c<7;c++){
+
+if(r===0 && c<first){
+html+="<td></td>";
+}
+else if(day>days){
+html+="<td></td>";
+}
+else{
+html+="<td>"+day+"</td>";
+day++;
+}
+
+}
+
+html+="</tr>";
+
+}
+
+html+="</table>";
+
+document.getElementById("calendar").innerHTML=html;
+
+}
+
+generate();
+
+function back(){
+location.href="index.html";
+}
+
+</script>
+
+</body>
+</html>
