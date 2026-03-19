@@ -8,7 +8,6 @@
 <title>工時打卡</title>
 
 <style>
-
 body{
 font-family:-apple-system;
 background:#f4f6fb;
@@ -16,7 +15,6 @@ margin:20px;
 max-width:500px;
 margin:auto;
 }
-
 .card{
 background:white;
 padding:20px;
@@ -24,7 +22,6 @@ border-radius:12px;
 margin-bottom:15px;
 box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
-
 button{
 padding:14px;
 border:none;
@@ -33,21 +30,17 @@ font-size:16px;
 width:100%;
 margin-top:10px;
 }
-
 button:disabled{
 background:#ccc !important;
 color:#666;
 }
-
 .in{background:#34c759;color:white;}
 .out{background:#ff3b30;color:white;}
 .menu{background:#007aff;color:white;}
-
 .notice{
 color:red;
 font-weight:bold;
 }
-
 </style>
 
 </head>
@@ -64,7 +57,7 @@ font-weight:bold;
 
 <div class="card">
 <p class="notice">
-平日上班為7小時，週末上班為8小時計算，加班費另計
+平日7小時 / 假日8小時，加班另計
 </p>
 </div>
 
@@ -81,11 +74,6 @@ font-weight:bold;
 <p>今日薪資：<span id="todayPay">0</span></p>
 </div>
 
-<div class="card">
-<button class="menu" onclick="calendar()">月曆</button>
-<button class="menu" onclick="record()">紀錄查詢</button>
-</div>
-
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbwYJm-12JYPIu7MSvxvT4jIW34Revsa2g9FqJwnMlXd9e2fz5JrRdXnJ9vLTGOHB0TZ/exec";
@@ -93,108 +81,95 @@ const RATE = 200;
 
 let name=localStorage.getItem("name");
 let password=localStorage.getItem("password");
-
 let todayData=null;
 
-if(!name){
+/* =========================
+   🔥 登入檢查（不能用 return）
+========================= */
+if(!name || !password){
 location.href="login.html";
 }
 
+/* ========================= */
 document.getElementById("user").innerText=name;
 
 /* =========================
-   📌 台灣日期（避免時區問題）
+   📌 日期
 ========================= */
 function today(){
 let d=new Date();
-let y=d.getFullYear();
-let m=(d.getMonth()+1).toString().padStart(2,"0");
-let day=d.getDate().toString().padStart(2,"0");
-return `${y}-${m}-${day}`;
+return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
 function formatMonth(){
 let d=new Date();
-let y=d.getFullYear();
-let m=(d.getMonth()+1).toString().padStart(2,"0");
-return `${y}年${m}月`;
+return `${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,"0")}月`;
 }
 
-function calcHours(start,end){
-let s=new Date("1970-01-01 "+start);
-let e=new Date("1970-01-01 "+end);
-return (e-s)/1000/60/60;
+function calcHours(s,e){
+let a=new Date("1970-01-01 "+s);
+let b=new Date("1970-01-01 "+e);
+return (b-a)/1000/60/60;
 }
 
 function getMaxHours(){
-let d=new Date();
-let day=d.getDay();
-return (day===0||day===6)?8:7;
+let d=new Date().getDay();
+return (d===0||d===6)?8:7;
 }
 
 /* =========================
-   🔥 初始化
+   🔥 初始化（唯一 async）
 ========================= */
 async function init(){
 
-document.getElementById("shiftMsg").innerText="";
-document.getElementById("holidayMsg").innerText="";
+try{
 
-if(!password){
-location.href="login.html";
-return;
-}
+let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&password=${password}`;
 
-let month=formatMonth();
-
-let url=`${API}?action=getMonth&month=${encodeURIComponent(month)}&password=${password}`;
-
-// 🔥 一次就夠（因為 API 已保證初始化）
 let res=await fetch(url);
 let resData=await res.json();
 
 if(!resData.success){
-alert(resData.msg || "API錯誤");
+alert(resData.msg);
 return;
 }
 
-let data = resData.data;
+let data=resData.data;
 
-// 🔥 一定會有資料（因為 API 已初始化）
-todayData = data.find(x=>x.date===today());
+// 🔥 找今天
+todayData=data.find(x=>x.date===today());
 
 if(!todayData){
-document.getElementById("shiftMsg").innerText="初始化中，請重新整理";
+document.getElementById("shiftMsg").innerText="初始化中...";
 return;
 }
 
 // 未排班
 if(todayData.shift==="N"){
-document.getElementById("shiftMsg").innerText="當日未排班，請確認!!";
+document.getElementById("shiftMsg").innerText="當日未排班";
 }
 
-// 國定假日
+// 假日
 if(todayData.holiday==="Y"){
-document.getElementById("holidayMsg").innerText="今日為國定假日!!";
+document.getElementById("holidayMsg").innerText="今日為國定假日";
 }
 
 // 顯示
 if(todayData.start){
 
 document.getElementById("startT").innerText=todayData.start;
-document.getElementById("endT").innerText=todayData.end || "-";
-
 document.getElementById("btnIn").disabled=true;
 
 if(todayData.end){
 
-let realH=calcHours(todayData.start,todayData.end);
-let calcH=Math.min(realH,getMaxHours());
-let pay=calcH*RATE;
+document.getElementById("endT").innerText=todayData.end;
 
-document.getElementById("calcH").innerText=calcH.toFixed(2)+" 小時";
-document.getElementById("realH").innerText=realH.toFixed(2)+" 小時";
-document.getElementById("todayPay").innerText=pay+" 元";
+let real=calcHours(todayData.start,todayData.end);
+let calc=Math.min(real,getMaxHours());
+
+document.getElementById("calcH").innerText=calc.toFixed(2);
+document.getElementById("realH").innerText=real.toFixed(2);
+document.getElementById("todayPay").innerText=Math.round(calc*RATE);
 
 document.getElementById("btnOut").disabled=true;
 
@@ -202,82 +177,9 @@ document.getElementById("btnOut").disabled=true;
 
 }
 
-}
-
-document.getElementById("shiftMsg").innerText="";
-document.getElementById("holidayMsg").innerText="";
-
-if(!name || !password){
-location.href="login.html";
-}
-
-let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&password=${password}`;
-
-// 第一次（觸發建立）
-let res=await fetch(url);
-let resData=await res.json();
-
-if(!resData.success){
-alert(resData.msg || "API錯誤");
-return;
-}
-
-let data = resData.data;
-
-// 若空 → 再抓一次
-if(!data || data.length===0){
-res=await fetch(url);
-resData=await res.json();
-
-if(!resData.success){
-alert(resData.msg || "API錯誤");
-return;
-}
-
-data = resData.data;
-}
-
-// 找今日
-todayData = data.find(x=>x.date===today());
-
-// 防呆
-if(!todayData){
-document.getElementById("shiftMsg").innerText="初始化資料中，請重新整理";
-return;
-}
-
-// 未排班
-if(todayData.shift==="N"){
-document.getElementById("shiftMsg").innerText="當日未排班，請確認!!";
-}
-
-// 國定假日
-if(todayData.holiday==="Y"){
-document.getElementById("holidayMsg").innerText="今日為國定假日!!";
-}
-
-// 顯示資料
-if(todayData.start){
-
-document.getElementById("startT").innerText=todayData.start;
-document.getElementById("endT").innerText=todayData.end || "-";
-
-document.getElementById("btnIn").disabled=true;
-
-if(todayData.end){
-
-let realH=calcHours(todayData.start,todayData.end);
-let calcH=Math.min(realH,getMaxHours());
-let pay=calcH*RATE;
-
-document.getElementById("calcH").innerText=calcH.toFixed(2)+" 小時";
-document.getElementById("realH").innerText=realH.toFixed(2)+" 小時";
-document.getElementById("todayPay").innerText=pay+" 元";
-
-document.getElementById("btnOut").disabled=true;
-
-}
-
+}catch(e){
+console.error(e);
+alert("系統錯誤");
 }
 
 }
@@ -288,12 +190,12 @@ document.getElementById("btnOut").disabled=true;
 async function clockIn(){
 
 if(todayData.shift==="N"){
-alert("當日未排班，請確認!!");
+alert("未排班");
 return;
 }
 
 if(todayData.start){
-alert("已經打過上班卡");
+alert("已打上班卡");
 return;
 }
 
@@ -302,16 +204,10 @@ let start=new Date().toTimeString().slice(0,5);
 await fetch(API,{
 method:"POST",
 body:JSON.stringify({
-password:password,
-date:today(),
-name:name,
-start:start,
-rate:RATE,
-type:"in"
+password,date:today(),name,start,rate:RATE,type:"in"
 })
 });
 
-alert("上班打卡成功");
 location.reload();
 }
 
@@ -320,55 +216,38 @@ location.reload();
 ========================= */
 async function clockOut(){
 
-if(todayData.shift==="N"){
-alert("當日未排班，請確認!!");
-return;
-}
-
 if(!todayData.start){
-alert("尚未打上班卡");
+alert("未上班");
 return;
 }
 
 if(todayData.end){
-alert("已經打過下班卡");
+alert("已下班");
 return;
 }
 
 let end=new Date().toTimeString().slice(0,5);
 
-let realH=calcHours(todayData.start,end);
-let calcH=Math.min(realH,getMaxHours());
-let pay=calcH*RATE;
+let real=calcHours(todayData.start,end);
+let calc=Math.min(real,getMaxHours());
 
 await fetch(API,{
 method:"POST",
 body:JSON.stringify({
-password:password,
-date:today(),
-name:name,
+password,date:today(),name,
 start:todayData.start,
-end:end,
-hours:calcH,
+end,
+hours:calc,
 rate:RATE,
-salary:pay,
+salary:calc*RATE,
 type:"out"
 })
 });
 
-alert("下班打卡成功");
 location.reload();
-
 }
 
-function calendar(){
-location.href="calendar.html";
-}
-
-function record(){
-location.href="record.html";
-}
-
+/* ========================= */
 init();
 
 </script>
