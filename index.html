@@ -103,7 +103,7 @@ location.href="login.html";
 document.getElementById("user").innerText=name;
 
 /* =========================
-   📌 正確台灣日期（避免時區錯誤）
+   📌 台灣日期（避免時區問題）
 ========================= */
 function today(){
 let d=new Date();
@@ -137,20 +137,39 @@ return (day===0||day===6)?8:7;
 ========================= */
 async function init(){
 
-// 清空訊息
 document.getElementById("shiftMsg").innerText="";
 document.getElementById("holidayMsg").innerText="";
 
-let url=`${API}?action=getMonth&month=${formatMonth()}&password=${password}`;
+if(!password){
+alert("請重新登入");
+location.href="login.html";
+return;
+}
 
-// 第一次 → 觸發建立
+let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&password=${password}`;
+
+// 第一次（觸發建立）
 let res=await fetch(url);
-let data=await res.json();
+let resData=await res.json();
 
-// 再抓一次確保資料存在
+if(!resData.success){
+alert(resData.msg || "API錯誤");
+return;
+}
+
+let data = resData.data;
+
+// 若空 → 再抓一次
 if(!data || data.length===0){
 res=await fetch(url);
-data=await res.json();
+resData=await res.json();
+
+if(!resData.success){
+alert(resData.msg || "API錯誤");
+return;
+}
+
+data = resData.data;
 }
 
 // 找今日
@@ -178,7 +197,6 @@ if(todayData.start){
 document.getElementById("startT").innerText=todayData.start;
 document.getElementById("endT").innerText=todayData.end || "-";
 
-// disable 上班
 document.getElementById("btnIn").disabled=true;
 
 if(todayData.end){
@@ -191,7 +209,6 @@ document.getElementById("calcH").innerText=calcH.toFixed(2)+" 小時";
 document.getElementById("realH").innerText=realH.toFixed(2)+" 小時";
 document.getElementById("todayPay").innerText=pay+" 元";
 
-// disable 下班
 document.getElementById("btnOut").disabled=true;
 
 }
