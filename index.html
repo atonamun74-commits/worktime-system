@@ -34,6 +34,11 @@ width:100%;
 margin-top:10px;
 }
 
+button:disabled{
+background:#ccc !important;
+color:#666;
+}
+
 .in{background:#34c759;color:white;}
 .out{background:#ff3b30;color:white;}
 .menu{background:#007aff;color:white;}
@@ -53,6 +58,8 @@ font-weight:bold;
 
 <div class="card">
 <p>員工：<span id="user"></span></p>
+<p id="shiftMsg" class="notice"></p>
+<p id="holidayMsg" class="notice"></p>
 </div>
 
 <div class="card">
@@ -62,8 +69,8 @@ font-weight:bold;
 </div>
 
 <div class="card">
-<button class="in" onclick="clockIn()">上班打卡</button>
-<button class="out" onclick="clockOut()">下班打卡</button>
+<button id="btnIn" class="in" onclick="clockIn()">上班打卡</button>
+<button id="btnOut" class="out" onclick="clockOut()">下班打卡</button>
 </div>
 
 <div class="card">
@@ -82,11 +89,12 @@ font-weight:bold;
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbwYJm-12JYPIu7MSvxvT4jIW34Revsa2g9FqJwnMlXd9e2fz5JrRdXnJ9vLTGOHB0TZ/exec";
-
 const RATE = 200;
 
 let name=localStorage.getItem("name");
 let password=localStorage.getItem("password");
+
+let todayData=null;
 
 if(!name){
 location.href="login.html";
@@ -94,54 +102,122 @@ location.href="login.html";
 
 document.getElementById("user").innerText=name;
 
-function nowFull(){
-let d=new Date();
-return d.toLocaleString();
-}
-
-function nowTime(){
-let d=new Date();
-return String(d.getHours()).padStart(2,'0')+":"+
-       String(d.getMinutes()).padStart(2,'0');
-}
-
+/* =========================
+   📌 正確台灣日期（避免時區錯誤）
+========================= */
 function today(){
-return new Date().toISOString().split("T")[0];
+let d=new Date();
+let y=d.getFullYear();
+let m=(d.getMonth()+1).toString().padStart(2,"0");
+let day=d.getDate().toString().padStart(2,"0");
+return `${y}-${m}-${day}`;
+}
+
+function formatMonth(){
+let d=new Date();
+let y=d.getFullYear();
+let m=(d.getMonth()+1).toString().padStart(2,"0");
+return `${y}年${m}月`;
 }
 
 function calcHours(start,end){
-
 let s=new Date("1970-01-01 "+start);
 let e=new Date("1970-01-01 "+end);
-
 return (e-s)/1000/60/60;
-
 }
 
-// 判斷平日 or 假日
 function getMaxHours(){
 let d=new Date();
-let day=d.getDay(); // 0日 6六
-
-if(day===0 || day===6){
-return 8;
-}else{
-return 7;
-}
+let day=d.getDay();
+return (day===0||day===6)?8:7;
 }
 
-function clockIn(){
+/* =========================
+   🔥 初始化
+========================= */
+async function init(){
 
-let start=nowTime();
+// 清空訊息
+document.getElementById("shiftMsg").innerText="";
+document.getElementById("holidayMsg").innerText="";
 
-localStorage.setItem("start",start);
+let url=`${API}?action=getMonth&month=${formatMonth()}&password=${password}`;
 
-document.getElementById("startT").innerText=nowFull();
+// 第一次 → 觸發建立
+let res=await fetch(url);
+let data=await res.json();
 
-alert("上班打卡成功");
+// 再抓一次確保資料存在
+if(!data || data.length===0){
+res=await fetch(url);
+data=await res.json();
+}
 
-// 🔥 立即寫入（先寫部分）
-fetch(API,{
+// 找今日
+todayData = data.find(x=>x.date===today());
+
+// 防呆
+if(!todayData){
+document.getElementById("shiftMsg").innerText="初始化資料中，請重新整理";
+return;
+}
+
+// 未排班
+if(todayData.shift==="N"){
+document.getElementById("shiftMsg").innerText="當日未排班，請確認!!";
+}
+
+// 國定假日
+if(todayData.holiday==="Y"){
+document.getElementById("holidayMsg").innerText="今日為國定假日!!";
+}
+
+// 顯示資料
+if(todayData.start){
+
+document.getElementById("startT").innerText=todayData.start;
+document.getElementById("endT").innerText=todayData.end || "-";
+
+// disable 上班
+document.getElementById("btnIn").disabled=true;
+
+if(todayData.end){
+
+let realH=calcHours(todayData.start,todayData.end);
+let calcH=Math.min(realH,getMaxHours());
+let pay=calcH*RATE;
+
+document.getElementById("calcH").innerText=calcH.toFixed(2)+" 小時";
+document.getElementById("realH").innerText=realH.toFixed(2)+" 小時";
+document.getElementById("todayPay").innerText=pay+" 元";
+
+// disable 下班
+document.getElementById("btnOut").disabled=true;
+
+}
+
+}
+
+}
+
+/* =========================
+   🟢 上班
+========================= */
+async function clockIn(){
+
+if(todayData.shift==="N"){
+alert("當日未排班，請確認!!");
+return;
+}
+
+if(todayData.start){
+alert("已經打過上班卡");
+return;
+}
+
+let start=new Date().toTimeString().slice(0,5);
+
+await fetch(API,{
 method:"POST",
 body:JSON.stringify({
 password:password,
@@ -153,43 +229,43 @@ type:"in"
 })
 });
 
+alert("上班打卡成功");
+location.reload();
 }
 
+/* =========================
+   🔴 下班
+========================= */
 async function clockOut(){
 
-let start=localStorage.getItem("start");
-
-if(!start){
-alert("尚未上班打卡");
+if(todayData.shift==="N"){
+alert("當日未排班，請確認!!");
 return;
 }
 
-let end=nowTime();
+if(!todayData.start){
+alert("尚未打上班卡");
+return;
+}
 
-let realH=calcHours(start,end);
+if(todayData.end){
+alert("已經打過下班卡");
+return;
+}
 
-let maxH=getMaxHours();
+let end=new Date().toTimeString().slice(0,5);
 
-// 👉 計算後工時（有上限）
-let calcH = Math.min(realH,maxH);
+let realH=calcHours(todayData.start,end);
+let calcH=Math.min(realH,getMaxHours());
+let pay=calcH*RATE;
 
-let pay = calcH * RATE;
-
-// 顯示
-document.getElementById("startT").innerText=start;
-document.getElementById("endT").innerText=end;
-document.getElementById("calcH").innerText=calcH.toFixed(2)+" 小時";
-document.getElementById("realH").innerText=realH.toFixed(2)+" 小時";
-document.getElementById("todayPay").innerText=pay.toFixed(0)+" 元";
-
-// 🔥 補寫資料
 await fetch(API,{
 method:"POST",
 body:JSON.stringify({
 password:password,
 date:today(),
 name:name,
-start:start,
+start:todayData.start,
 end:end,
 hours:calcH,
 rate:RATE,
@@ -198,7 +274,8 @@ type:"out"
 })
 });
 
-localStorage.removeItem("start");
+alert("下班打卡成功");
+location.reload();
 
 }
 
@@ -209,6 +286,8 @@ location.href="calendar.html";
 function record(){
 location.href="record.html";
 }
+
+init();
 
 </script>
 
