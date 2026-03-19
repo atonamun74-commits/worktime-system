@@ -49,6 +49,11 @@ th{background:#eee;}
 .work{background:#cce5ff;}
 .holiday{color:red;font-weight:bold;}
 
+.loading{
+text-align:center;
+padding:20px;
+}
+
 </style>
 
 </head>
@@ -63,7 +68,7 @@ th{background:#eee;}
 <button onclick="changeMonth(1)">→</button>
 </div>
 
-<div id="calendar"></div>
+<div id="calendar" class="loading">載入中...</div>
 
 <button onclick="back()">返回</button>
 
@@ -77,28 +82,73 @@ let name=localStorage.getItem("name");
 let current=new Date();
 let data=[];
 
+/* =========================
+   📌 月份格式
+========================= */
 function formatMonth(date){
 let y=date.getFullYear();
 let m=(date.getMonth()+1).toString().padStart(2,"0");
 return `${y}年${m}月`;
 }
 
+/* =========================
+   📌 日期格式
+========================= */
 function formatDate(y,m,d){
 return `${y}-${m}-${d.toString().padStart(2,"0")}`;
 }
 
+/* =========================
+   📌 載入資料
+========================= */
 async function load(){
+
+if(!password){
+alert("請重新登入");
+location.href="login.html";
+return;
+}
 
 let month=formatMonth(current);
 
-let res=await fetch(`${API}?action=getMonth&month=${month}&password=${password}`);
-data=await res.json();
+let url=`${API}?action=getMonth&month=${encodeURIComponent(month)}&password=${password}`;
+
+let res=await fetch(url);
+
+let resData;
+
+try{
+resData=await res.json();
+}catch(e){
+console.error("API錯誤");
+document.getElementById("calendar").innerHTML="API錯誤";
+return;
+}
+
+// API回傳錯誤
+if(!resData.success){
+alert(resData.msg || "API錯誤");
+return;
+}
+
+// 正確資料
+data = resData.data;
 
 }
 
+/* =========================
+   📌 產生日曆
+========================= */
 async function generate(){
 
+document.getElementById("calendar").innerHTML="載入中...";
+
 await load();
+
+if(!data || data.length===0){
+document.getElementById("calendar").innerHTML="無資料";
+return;
+}
 
 let y=current.getFullYear();
 let m=current.getMonth()+1;
@@ -110,6 +160,7 @@ let days=new Date(y,m,0).getDate();
 
 let html="<table>";
 
+// 星期列
 html+="<tr>";
 ["日","一","二","三","四","五","六"].forEach(d=>{
 html+=`<th>${d}</th>`;
@@ -134,6 +185,7 @@ else{
 
 let dateStr=formatDate(y,String(m).padStart(2,"0"),day);
 
+// 找該日期資料
 let row=data.find(x=>x.date===dateStr);
 
 let cls="";
@@ -166,15 +218,24 @@ document.getElementById("calendar").innerHTML=html;
 
 }
 
+/* =========================
+   📌 切換月份
+========================= */
 function changeMonth(n){
 current.setMonth(current.getMonth()+n);
 generate();
 }
 
+/* =========================
+   📌 返回
+========================= */
 function back(){
 location.href="index.html";
 }
 
+/* =========================
+   🚀 啟動
+========================= */
 generate();
 
 </script>
