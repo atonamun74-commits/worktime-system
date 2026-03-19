@@ -17,17 +17,37 @@ max-width:500px;
 margin:auto;
 }
 
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
+
+button{
+padding:8px 12px;
+border:none;
+border-radius:6px;
+background:#007aff;
+color:white;
+}
+
 table{
 width:100%;
 border-collapse:collapse;
 background:white;
 }
 
-td{
+th,td{
 border:1px solid #ddd;
-height:50px;
+height:60px;
 text-align:center;
 }
+
+th{background:#eee;}
+
+.work{background:#cce5ff;}
+.holiday{color:red;font-weight:bold;}
 
 </style>
 
@@ -37,23 +57,64 @@ text-align:center;
 
 <h2>上班月曆</h2>
 
+<div class="header">
+<button onclick="changeMonth(-1)">←</button>
+<h3 id="title"></h3>
+<button onclick="changeMonth(1)">→</button>
+</div>
+
 <div id="calendar"></div>
 
 <button onclick="back()">返回</button>
 
 <script>
 
-function generate(){
+const API="https://script.google.com/macros/s/AKfycbwYJm-12JYPIu7MSvxvT4jIW34Revsa2g9FqJwnMlXd9e2fz5JrRdXnJ9vLTGOHB0TZ/exec";
 
-let d=new Date();
+let password=localStorage.getItem("password");
+let name=localStorage.getItem("name");
 
-let year=d.getFullYear();
-let month=d.getMonth();
+let current=new Date();
+let data=[];
 
-let first=new Date(year,month,1).getDay();
-let days=new Date(year,month+1,0).getDate();
+function formatMonth(date){
+let y=date.getFullYear();
+let m=(date.getMonth()+1).toString().padStart(2,"0");
+return `${y}年${m}月`;
+}
+
+function formatDate(y,m,d){
+return `${y}-${m}-${d.toString().padStart(2,"0")}`;
+}
+
+async function load(){
+
+let month=formatMonth(current);
+
+let res=await fetch(`${API}?action=getMonth&month=${month}&password=${password}`);
+data=await res.json();
+
+}
+
+async function generate(){
+
+await load();
+
+let y=current.getFullYear();
+let m=current.getMonth()+1;
+
+document.getElementById("title").innerText=formatMonth(current);
+
+let first=new Date(y,m-1,1).getDay();
+let days=new Date(y,m,0).getDate();
 
 let html="<table>";
+
+html+="<tr>";
+["日","一","二","三","四","五","六"].forEach(d=>{
+html+=`<th>${d}</th>`;
+});
+html+="</tr>";
 
 let day=1;
 
@@ -70,7 +131,26 @@ else if(day>days){
 html+="<td></td>";
 }
 else{
-html+="<td>"+day+"</td>";
+
+let dateStr=formatDate(y,String(m).padStart(2,"0"),day);
+
+let row=data.find(x=>x.date===dateStr);
+
+let cls="";
+let text=day;
+
+// 排班
+if(row && row.shift==="Y"){
+cls+=" work";
+}
+
+// 國定假日
+if(row && row.holiday==="Y"){
+cls+=" holiday";
+}
+
+html+=`<td class="${cls}">${text}</td>`;
+
 day++;
 }
 
@@ -86,11 +166,16 @@ document.getElementById("calendar").innerHTML=html;
 
 }
 
+function changeMonth(n){
+current.setMonth(current.getMonth()+n);
 generate();
+}
 
 function back(){
 location.href="index.html";
 }
+
+generate();
 
 </script>
 
