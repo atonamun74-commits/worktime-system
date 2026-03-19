@@ -127,6 +127,80 @@ try{
 let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&password=${password}`;
 
 let res=await fetch(url);
+
+// 🔥 安全解析
+let text=await res.text();
+console.log("API回傳:", text);
+
+let resData;
+
+try{
+resData=JSON.parse(text);
+}catch(e){
+alert("API錯誤（非JSON）");
+return;
+}
+
+if(!resData.success){
+alert(resData.msg || "API錯誤");
+return;
+}
+
+let data=resData.data;
+
+// 找今天
+todayData=data.find(x=>x.date===today());
+
+if(!todayData){
+document.getElementById("shiftMsg").innerText="初始化中...";
+return;
+}
+
+// 未排班
+if(todayData.shift==="N"){
+document.getElementById("shiftMsg").innerText="當日未排班";
+}
+
+// 假日
+if(todayData.holiday==="Y"){
+document.getElementById("holidayMsg").innerText="今日為國定假日";
+}
+
+// 顯示
+if(todayData.start){
+
+document.getElementById("startT").innerText=todayData.start;
+document.getElementById("btnIn").disabled=true;
+
+if(todayData.end){
+
+document.getElementById("endT").innerText=todayData.end;
+
+let real=calcHours(todayData.start,todayData.end);
+let calc=Math.min(real,getMaxHours());
+
+document.getElementById("calcH").innerText=calc.toFixed(2);
+document.getElementById("realH").innerText=real.toFixed(2);
+document.getElementById("todayPay").innerText=Math.round(calc*RATE);
+
+document.getElementById("btnOut").disabled=true;
+
+}
+
+}
+
+}catch(e){
+console.error(e);
+alert("系統錯誤");
+}
+
+}
+
+try{
+
+let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&password=${password}`;
+
+let res=await fetch(url);
 let resData=await res.json();
 
 if(!resData.success){
