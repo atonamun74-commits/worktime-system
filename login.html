@@ -4,8 +4,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>工時打卡</title>
+<title>工時系統登入</title>
 
 <style>
 
@@ -21,26 +20,23 @@ margin:auto;
 background:white;
 padding:20px;
 border-radius:12px;
-margin-bottom:15px;
 box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
-button{
-padding:14px;
-border:none;
-border-radius:8px;
-font-size:16px;
+input{
 width:100%;
+padding:10px;
 margin-top:10px;
 }
 
-.in{background:#34c759;color:white;}
-.out{background:#ff3b30;color:white;}
-.menu{background:#007aff;color:white;}
-
-.notice{
-color:red;
-font-weight:bold;
+button{
+width:100%;
+padding:12px;
+margin-top:15px;
+background:#007aff;
+color:white;
+border:none;
+border-radius:8px;
 }
 
 </style>
@@ -49,165 +45,40 @@ font-weight:bold;
 
 <body>
 
-<h2>工時打卡</h2>
+<h2>工時系統登入</h2>
 
 <div class="card">
-<p>員工：<span id="user"></span></p>
-</div>
 
-<div class="card">
-<p class="notice">
-平日上班為7小時，週末上班為8小時計算，加班費另計
-</p>
-</div>
+<label>姓名</label>
+<select id="name">
+  <option value="">請選擇</option>
+  <option value="瑪尼">瑪尼</option>
+</select>
 
-<div class="card">
-<button class="in" onclick="clockIn()">上班打卡</button>
-<button class="out" onclick="clockOut()">下班打卡</button>
-</div>
+<label>系統密碼</label>
+<input id="password" type="password">
 
-<div class="card">
-<p>上班時間：<span id="startT">-</span></p>
-<p>下班時間：<span id="endT">-</span></p>
-<p>今日工時計算：<span id="calcH">0</span></p>
-<p>實際工時：<span id="realH">0</span></p>
-<p>今日薪資：<span id="todayPay">0</span></p>
-</div>
+<button onclick="login()">登入</button>
 
-<div class="card">
-<button class="menu" onclick="calendar()">月曆</button>
-<button class="menu" onclick="record()">紀錄查詢</button>
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbwYJm-12JYPIu7MSvxvT4jIW34Revsa2g9FqJwnMlXd9e2fz5JrRdXnJ9vLTGOHB0TZ/exec";
+function login(){
 
-const RATE = 200;
+let name=document.getElementById("name").value;
+let pass=document.getElementById("password").value;
 
-let name=localStorage.getItem("name");
-let password=localStorage.getItem("password");
-
-if(!name){
-location.href="login.html";
-}
-
-document.getElementById("user").innerText=name;
-
-function nowFull(){
-let d=new Date();
-return d.toLocaleString();
-}
-
-function nowTime(){
-let d=new Date();
-return String(d.getHours()).padStart(2,'0')+":"+
-       String(d.getMinutes()).padStart(2,'0');
-}
-
-function today(){
-return new Date().toISOString().split("T")[0];
-}
-
-function calcHours(start,end){
-
-let s=new Date("1970-01-01 "+start);
-let e=new Date("1970-01-01 "+end);
-
-return (e-s)/1000/60/60;
-
-}
-
-// 判斷平日 or 假日
-function getMaxHours(){
-let d=new Date();
-let day=d.getDay(); // 0日 6六
-
-if(day===0 || day===6){
-return 8;
-}else{
-return 7;
-}
-}
-
-function clockIn(){
-
-let start=nowTime();
-
-localStorage.setItem("start",start);
-
-document.getElementById("startT").innerText=nowFull();
-
-alert("上班打卡成功");
-
-// 🔥 立即寫入（先寫部分）
-fetch(API,{
-method:"POST",
-body:JSON.stringify({
-password:password,
-date:today(),
-name:name,
-start:start,
-rate:RATE,
-type:"in"
-})
-});
-
-}
-
-async function clockOut(){
-
-let start=localStorage.getItem("start");
-
-if(!start){
-alert("尚未上班打卡");
+if(pass!=="isvara"){
+alert("密碼錯誤");
 return;
 }
 
-let end=nowTime();
+localStorage.setItem("name",name);
+localStorage.setItem("password",pass);
 
-let realH=calcHours(start,end);
+location.href="index.html";
 
-let maxH=getMaxHours();
-
-// 👉 計算後工時（有上限）
-let calcH = Math.min(realH,maxH);
-
-let pay = calcH * RATE;
-
-// 顯示
-document.getElementById("startT").innerText=start;
-document.getElementById("endT").innerText=end;
-document.getElementById("calcH").innerText=calcH.toFixed(2)+" 小時";
-document.getElementById("realH").innerText=realH.toFixed(2)+" 小時";
-document.getElementById("todayPay").innerText=pay.toFixed(0)+" 元";
-
-// 🔥 補寫資料
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-password:password,
-date:today(),
-name:name,
-start:start,
-end:end,
-hours:calcH,
-rate:RATE,
-salary:pay,
-type:"out"
-})
-});
-
-localStorage.removeItem("start");
-
-}
-
-function calendar(){
-location.href="calendar.html";
-}
-
-function record(){
-location.href="record.html";
 }
 
 </script>
