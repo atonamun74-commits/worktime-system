@@ -36,7 +36,6 @@ color:#666;
 }
 .in{background:#34c759;color:white;}
 .out{background:#ff3b30;color:white;}
-.menu{background:#007aff;color:white;}
 .notice{
 color:red;
 font-weight:bold;
@@ -83,19 +82,14 @@ let name=localStorage.getItem("name");
 let password=localStorage.getItem("password");
 let todayData=null;
 
-/* =========================
-   🔥 登入檢查（不能用 return）
-========================= */
+// 登入檢查
 if(!name || !password){
 location.href="login.html";
 }
 
-/* ========================= */
 document.getElementById("user").innerText=name;
 
-/* =========================
-   📌 日期
-========================= */
+// 日期
 function today(){
 let d=new Date();
 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -117,9 +111,7 @@ let d=new Date().getDay();
 return (d===0||d===6)?8:7;
 }
 
-/* =========================
-   🔥 初始化（唯一 async）
-========================= */
+// 🔥 唯一 async
 async function init(){
 
 try{
@@ -128,7 +120,7 @@ let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&passw
 
 let res=await fetch(url);
 
-// 🔥 安全解析
+// 安全解析
 let text=await res.text();
 console.log("API回傳:", text);
 
@@ -196,71 +188,7 @@ alert("系統錯誤");
 
 }
 
-try{
-
-let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&password=${password}`;
-
-let res=await fetch(url);
-let resData=await res.json();
-
-if(!resData.success){
-alert(resData.msg);
-return;
-}
-
-let data=resData.data;
-
-// 🔥 找今天
-todayData=data.find(x=>x.date===today());
-
-if(!todayData){
-document.getElementById("shiftMsg").innerText="初始化中...";
-return;
-}
-
-// 未排班
-if(todayData.shift==="N"){
-document.getElementById("shiftMsg").innerText="當日未排班";
-}
-
-// 假日
-if(todayData.holiday==="Y"){
-document.getElementById("holidayMsg").innerText="今日為國定假日";
-}
-
-// 顯示
-if(todayData.start){
-
-document.getElementById("startT").innerText=todayData.start;
-document.getElementById("btnIn").disabled=true;
-
-if(todayData.end){
-
-document.getElementById("endT").innerText=todayData.end;
-
-let real=calcHours(todayData.start,todayData.end);
-let calc=Math.min(real,getMaxHours());
-
-document.getElementById("calcH").innerText=calc.toFixed(2);
-document.getElementById("realH").innerText=real.toFixed(2);
-document.getElementById("todayPay").innerText=Math.round(calc*RATE);
-
-document.getElementById("btnOut").disabled=true;
-
-}
-
-}
-
-}catch(e){
-console.error(e);
-alert("系統錯誤");
-}
-
-}
-
-/* =========================
-   🟢 上班
-========================= */
+// 上班
 async function clockIn(){
 
 if(todayData.shift==="N"){
@@ -285,9 +213,7 @@ password,date:today(),name,start,rate:RATE,type:"in"
 location.reload();
 }
 
-/* =========================
-   🔴 下班
-========================= */
+// 下班
 async function clockOut(){
 
 if(!todayData.start){
@@ -321,7 +247,7 @@ type:"out"
 location.reload();
 }
 
-/* ========================= */
+// 啟動
 init();
 
 </script>
