@@ -207,10 +207,8 @@ document.getElementById("btnOut").disabled=true;
 document.getElementById("shiftMsg").innerText="";
 document.getElementById("holidayMsg").innerText="";
 
-if(!password){
-alert("請重新登入");
+if(!name || !password){
 location.href="login.html";
-return;
 }
 
 let url=`${API}?action=getMonth&month=${encodeURIComponent(formatMonth())}&password=${password}`;
