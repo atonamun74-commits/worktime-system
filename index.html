@@ -141,6 +141,73 @@ document.getElementById("shiftMsg").innerText="";
 document.getElementById("holidayMsg").innerText="";
 
 if(!password){
+location.href="login.html";
+return;
+}
+
+let month=formatMonth();
+
+let url=`${API}?action=getMonth&month=${encodeURIComponent(month)}&password=${password}`;
+
+// 🔥 一次就夠（因為 API 已保證初始化）
+let res=await fetch(url);
+let resData=await res.json();
+
+if(!resData.success){
+alert(resData.msg || "API錯誤");
+return;
+}
+
+let data = resData.data;
+
+// 🔥 一定會有資料（因為 API 已初始化）
+todayData = data.find(x=>x.date===today());
+
+if(!todayData){
+document.getElementById("shiftMsg").innerText="初始化中，請重新整理";
+return;
+}
+
+// 未排班
+if(todayData.shift==="N"){
+document.getElementById("shiftMsg").innerText="當日未排班，請確認!!";
+}
+
+// 國定假日
+if(todayData.holiday==="Y"){
+document.getElementById("holidayMsg").innerText="今日為國定假日!!";
+}
+
+// 顯示
+if(todayData.start){
+
+document.getElementById("startT").innerText=todayData.start;
+document.getElementById("endT").innerText=todayData.end || "-";
+
+document.getElementById("btnIn").disabled=true;
+
+if(todayData.end){
+
+let realH=calcHours(todayData.start,todayData.end);
+let calcH=Math.min(realH,getMaxHours());
+let pay=calcH*RATE;
+
+document.getElementById("calcH").innerText=calcH.toFixed(2)+" 小時";
+document.getElementById("realH").innerText=realH.toFixed(2)+" 小時";
+document.getElementById("todayPay").innerText=pay+" 元";
+
+document.getElementById("btnOut").disabled=true;
+
+}
+
+}
+
+}
+
+document.getElementById("shiftMsg").innerText="";
+document.getElementById("holidayMsg").innerText="";
+
+if(!password){
 alert("請重新登入");
 location.href="login.html";
 return;
